@@ -8,13 +8,23 @@ import {
 } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { getMonthSummary, getMonthlySeries } from "@/lib/queries/summary";
+import { getMonthCommitments } from "@/lib/queries/commitments";
+import { getBudgetsWithSpent } from "@/lib/queries/budgets";
 import type { TransactionWithRefs } from "@/lib/types";
 import { CategoryDonut } from "@/components/charts/category-donut";
 import { MonthlyBars } from "@/components/charts/monthly-bars";
 import { CategoryIcon } from "@/components/category-icon";
+import { PendingPayments } from "@/components/pending-payments";
+import { BudgetBar } from "@/components/budget-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Car,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  Target,
+} from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -32,36 +42,50 @@ export default async function DashboardPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profile }, summary, series, { data: recent }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("display_name, monthly_income_estimate")
-        .eq("id", user!.id)
-        .single(),
-      getMonthSummary(supabase, month),
-      getMonthlySeries(supabase, currentMonth(), 6),
-      supabase
-        .from("transactions")
-        .select(
-          "*, categories(name, icon, color, type), payment_methods(name, color, type)"
-        )
-        .order("tx_date", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(5),
-    ]);
+  const [
+    { data: profile },
+    summary,
+    series,
+    commitments,
+    budgets,
+    { data: recent },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, monthly_income_estimate")
+      .eq("id", user!.id)
+      .single(),
+    getMonthSummary(supabase, month),
+    getMonthlySeries(supabase, currentMonth(), 6),
+    getMonthCommitments(supabase, month),
+    getBudgetsWithSpent(supabase, month),
+    supabase
+      .from("transactions")
+      .select(
+        "*, categories(name, icon, color, type), payment_methods(name, color, type)"
+      )
+      .order("tx_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
 
-  // Si aún no se registró el ingreso del mes, usar el estimado del perfil.
+  // Ingresos esperados: lo registrado + recurrentes de ingreso pendientes.
+  // Si no hay nada, usar el estimado del perfil.
+  const committedExpense = isCurrent ? commitments.committedExpense : 0;
+  const pendingIncome = isCurrent ? commitments.pendingIncome : 0;
+  const expectedIncome = summary.income + pendingIncome;
   const usingEstimate =
-    summary.income === 0 && (profile?.monthly_income_estimate ?? 0) > 0;
+    expectedIncome === 0 && (profile?.monthly_income_estimate ?? 0) > 0;
   const incomeBase = usingEstimate
     ? Number(profile!.monthly_income_estimate)
-    : summary.income;
+    : expectedIncome;
 
-  const available = incomeBase - summary.expense;
+  const available = incomeBase - summary.expense - committedExpense;
   const daysLeft = daysLeftInMonth(month);
   const perDay = daysLeft > 0 && available > 0 ? available / daysLeft : 0;
   const firstName = profile?.display_name?.split(" ")[0];
+  const topBudgets = budgets.slice(0, 3);
+  const alertBudgets = budgets.filter((b) => b.pct >= 90);
 
   return (
     <div className="space-y-5">
@@ -112,8 +136,8 @@ export default async function DashboardPage({
           </p>
           {available < 0 ? (
             <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/80">
-              Gastaste {formatMoney(Math.abs(available))} más de lo que ingresó. 💪
-              Vamos a recuperarlo.
+              Entre lo gastado y lo comprometido vas {formatMoney(Math.abs(available))}{" "}
+              arriba de tus ingresos. 💪 Vamos a recuperarlo.
             </p>
           ) : (
             isCurrent &&
@@ -123,24 +147,95 @@ export default async function DashboardPage({
               </p>
             )
           )}
-          <div className="mt-4 grid grid-cols-2 gap-2 border-t pt-3 text-left">
+          <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-3 text-left">
             <div>
               <p className="text-xs text-muted-foreground">
-                Ingresos{usingEstimate ? " (estimado)" : ""}
+                Ingresos{usingEstimate ? " (est.)" : ""}
               </p>
-              <p className="font-semibold tabular-nums text-green-600 dark:text-green-500">
+              <p className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-500">
                 {formatMoney(incomeBase)}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Gastado</p>
-              <p className="font-semibold tabular-nums text-red-600 dark:text-red-500">
+              <p className="text-sm font-semibold tabular-nums text-red-600 dark:text-red-500">
                 {formatMoney(summary.expense)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Comprometido</p>
+              <p className="text-sm font-semibold tabular-nums text-amber-600 dark:text-amber-500">
+                {formatMoney(committedExpense)}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Accesos rápidos */}
+      <div className="grid grid-cols-3 gap-2">
+        <QuickLink href="/presupuestos" icon={<Target className="size-5" />} label="Presupuestos" />
+        <QuickLink href="/deudas" icon={<Car className="size-5" />} label="Deudas y cuotas" />
+        <QuickLink href="/tarjetas" icon={<CreditCard className="size-5" />} label="Tarjetas" />
+      </div>
+
+      {/* Alertas de presupuesto */}
+      {isCurrent && alertBudgets.length > 0 && (
+        <div className="space-y-2">
+          {alertBudgets.map((b) => (
+            <Link
+              key={b.id}
+              href="/presupuestos"
+              className={`block rounded-xl border p-3 text-sm ${
+                b.pct >= 100
+                  ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400"
+                  : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-400"
+              }`}
+            >
+              {b.pct >= 100 ? "🚨" : "⚠️"} Vas al {Math.round(b.pct)}% de tu
+              presupuesto de <strong>{b.categories?.name}</strong> (
+              {formatMoney(b.spent)} de {formatMoney(Number(b.monthly_limit))})
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Pagos pendientes del mes */}
+      {isCurrent && <PendingPayments commitments={commitments} />}
+
+      {/* Top presupuestos */}
+      {topBudgets.length > 0 && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between pb-0">
+            <CardTitle className="text-base">Presupuestos</CardTitle>
+            <Link
+              href="/presupuestos"
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              Ver todos
+            </Link>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topBudgets.map((b) => (
+              <div key={b.id}>
+                <div className="flex items-center justify-between pb-1 text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="size-2.5 rounded-full"
+                      style={{ backgroundColor: b.categories?.color ?? "#64748b" }}
+                    />
+                    {b.categories?.name}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {formatMoney(b.spent)} / {formatMoney(Number(b.monthly_limit))}
+                  </span>
+                </div>
+                <BudgetBar pct={b.pct} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Donut por categoría */}
       <Card>
@@ -213,5 +308,25 @@ export default async function DashboardPage({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function QuickLink({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors hover:bg-accent"
+    >
+      <span className="text-primary">{icon}</span>
+      <span className="text-xs font-medium leading-tight">{label}</span>
+    </Link>
   );
 }

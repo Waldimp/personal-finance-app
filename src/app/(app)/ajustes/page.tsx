@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CreditCard,
   LogOut,
+  Repeat,
   Tags,
   UserRound,
 } from "lucide-react";
@@ -64,6 +65,13 @@ export default async function AjustesPage() {
             icon={<Tags className="size-5" />}
             title="Categorías"
             subtitle="Personalizá tus categorías de gasto"
+          />
+          <Separator />
+          <SettingsLink
+            href="/ajustes/recurrentes"
+            icon={<Repeat className="size-5" />}
+            title="Movimientos recurrentes"
+            subtitle="Salario, suscripciones, gastos fijos"
           />
           <Separator />
           <div className="flex items-center justify-between py-3">
