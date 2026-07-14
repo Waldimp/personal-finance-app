@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateProfile, completeOnboarding } from "@/lib/actions/profile";
+import { registerInitialBalance } from "@/lib/actions/transactions";
 import { createPaymentMethod } from "@/lib/actions/payment-methods";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ export function OnboardingWizard({ initialName }: { initialName: string }) {
   // Paso 1
   const [name, setName] = useState(initialName);
   const [income, setIncome] = useState("");
+  const [currentBalance, setCurrentBalance] = useState("");
   // Paso 2
   const [frequency, setFrequency] = useState<"monthly" | "biweekly">("monthly");
   const [payDay1, setPayDay1] = useState("");
@@ -64,6 +66,9 @@ export function OnboardingWizard({ initialName }: { initialName: string }) {
           pay_day_1: payDay1 ? Number(payDay1) : null,
           pay_day_2: frequency === "biweekly" && payDay2 ? Number(payDay2) : null,
         });
+        if (Number(currentBalance) > 0) {
+          await registerInitialBalance(Number(currentBalance));
+        }
         for (const card of cards.filter((c) => c.name.trim())) {
           await createPaymentMethod({
             name: card.name.trim(),
@@ -136,7 +141,27 @@ export function OnboardingWizard({ initialName }: { initialName: string }) {
               placeholder="1000.00"
             />
             <p className="text-xs text-muted-foreground">
-              Lo usamos para calcular tu disponible y darte consejos. Podés cambiarlo después.
+              Tu sueldo aproximado. Lo usamos para proyecciones y consejos —
+              el disponible solo cuenta plata que registrés de verdad.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ob-balance">
+              ¿Cuánto tenés disponible HOY? (cuenta + efectivo)
+            </Label>
+            <Input
+              id="ob-balance"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={currentBalance}
+              onChange={(e) => setCurrentBalance(e.target.value)}
+              placeholder="250.00"
+            />
+            <p className="text-xs text-muted-foreground">
+              Se registra como &quot;Saldo inicial&quot; para que tu disponible
+              arranque con tu realidad, no con supuestos.
             </p>
           </div>
         </div>

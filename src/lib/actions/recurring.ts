@@ -60,8 +60,16 @@ export async function deleteRecurring(id: string) {
   revalidatePath("/", "layout");
 }
 
-/** Confirma el movimiento recurrente de este mes (1 tap). */
-export async function confirmRecurring(id: string) {
+/**
+ * Confirma el movimiento recurrente de este mes (1 tap).
+ * `amountOverride` permite registrar el monto real recibido (ej. salario
+ * líquido tras descuentos de ley) sin cambiar la plantilla recurrente.
+ */
+export async function confirmRecurring(id: string, amountOverride?: number) {
+  const override =
+    amountOverride !== undefined
+      ? z.coerce.number().positive().max(1_000_000).parse(amountOverride)
+      : undefined;
   const supabase = await createClient();
   const {
     data: { user },
@@ -83,7 +91,7 @@ export async function confirmRecurring(id: string) {
   const { error: txError } = await supabase.from("transactions").insert({
     user_id: user.id,
     type: rec.type,
-    amount: rec.amount,
+    amount: override ?? rec.amount,
     tx_date: todayLocal(),
     description: rec.description,
     category_id: rec.category_id,

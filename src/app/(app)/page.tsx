@@ -78,22 +78,21 @@ export default async function DashboardPage({
       .is("category_id", null),
   ]);
 
-  // Ingresos esperados: lo registrado + recurrentes de ingreso pendientes.
-  // Si no hay nada, usar el estimado del perfil.
   const committedExpense = isCurrent ? commitments.committedExpense : 0;
   const pendingIncome = isCurrent ? commitments.pendingIncome : 0;
-  const expectedIncome = summary.income + pendingIncome;
-  const usingEstimate =
-    expectedIncome === 0 && (profile?.monthly_income_estimate ?? 0) > 0;
-  const incomeBase = usingEstimate
-    ? Number(profile!.monthly_income_estimate)
-    : expectedIncome;
 
-  const available = incomeBase - summary.expense - committedExpense;
+  // Disponible = SOLO plata registrada de verdad − gastado − comprometido.
+  // Nada de estimados: si el sueldo aún no cae, no existe.
+  const available = summary.income - summary.expense - committedExpense;
+
+  // Para proyecciones y consejos sí usamos el ingreso esperado del mes.
+  const incomeForInsights =
+    summary.income + pendingIncome ||
+    Number(profile?.monthly_income_estimate ?? 0);
 
   // Consejos y ánimos (solo para el mes actual).
   const insights = isCurrent
-    ? computeInsights(await buildInsightContext(supabase, incomeBase))
+    ? computeInsights(await buildInsightContext(supabase, incomeForInsights))
     : [];
   const daysLeft = daysLeftInMonth(month);
   const perDay = daysLeft > 0 && available > 0 ? available / daysLeft : 0;
@@ -150,7 +149,7 @@ export default async function DashboardPage({
           {available < 0 ? (
             <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/80">
               Entre lo gastado y lo comprometido vas {formatMoney(Math.abs(available))}{" "}
-              arriba de tus ingresos. 💪 Vamos a recuperarlo.
+              arriba de lo que ha entrado. 💪 Vamos a recuperarlo.
             </p>
           ) : (
             isCurrent &&
@@ -160,13 +159,17 @@ export default async function DashboardPage({
               </p>
             )
           )}
+          {isCurrent && pendingIncome > 0 && (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              💵 Por recibir este mes: {formatMoney(pendingIncome)} — se suma
+              cuando lo registrés
+            </p>
+          )}
           <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-3 text-left">
             <div>
-              <p className="text-xs text-muted-foreground">
-                Ingresos{usingEstimate ? " (est.)" : ""}
-              </p>
+              <p className="text-xs text-muted-foreground">Ingresos</p>
               <p className="text-sm font-semibold tabular-nums text-green-600 dark:text-green-500">
-                {formatMoney(incomeBase)}
+                {formatMoney(summary.income)}
               </p>
             </div>
             <div>

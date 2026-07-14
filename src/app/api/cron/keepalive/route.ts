@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToUser } from "@/lib/push-server";
-import { monthRange, currentMonth } from "@/lib/dates";
+import { monthRange, currentMonth, todayLocal } from "@/lib/dates";
 
 export const maxDuration = 60;
 
@@ -71,6 +71,34 @@ export async function GET(request: Request) {
         title: "Mis Finanzas",
         body: messages.slice(0, 3).join("\n"),
         url: "/presupuestos",
+      });
+      notified++;
+    }
+
+    // 3. Recordatorio de día de pago: ingreso recurrente ya vencido y aún
+    //    sin registrar este mes → "¿Ya te cayó el sueldo?" (diario hasta
+    //    que lo registre).
+    const todayDay = Number(todayLocal().slice(8, 10));
+    const month = currentMonth();
+    const { data: pendingIncomes } = await admin
+      .from("recurring_transactions")
+      .select("user_id, description, amount, day_of_month")
+      .eq("type", "income")
+      .eq("is_active", true)
+      .lte("day_of_month", todayDay)
+      .or(`last_generated_month.is.null,last_generated_month.neq.${month}`);
+
+    const incomeByUser = new Map<string, string[]>();
+    for (const r of pendingIncomes ?? []) {
+      const list = incomeByUser.get(r.user_id) ?? [];
+      list.push(r.description);
+      incomeByUser.set(r.user_id, list);
+    }
+    for (const [userId, names] of incomeByUser) {
+      await sendPushToUser(admin, userId, {
+        title: "Mis Finanzas",
+        body: `💵 ¿Ya te cayó ${names.join(" y ")}? Entrá y registrá cuánto recibiste líquido.`,
+        url: "/",
       });
       notified++;
     }
