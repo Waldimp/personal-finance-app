@@ -49,7 +49,7 @@ export default function RegistroPage() {
 
   if (needsConfirm) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-12">
+      <main className="flex min-h-safe flex-col items-center justify-center px-6 py-8">
         <div className="w-full max-w-sm space-y-4 text-center">
           <h1 className="text-2xl font-bold">Revisá tu correo 📬</h1>
           <p className="text-muted-foreground">
@@ -69,7 +69,7 @@ export default function RegistroPage() {
   }
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-6 py-12">
+    <main className="flex min-h-safe flex-col items-center justify-center px-6 py-8">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">

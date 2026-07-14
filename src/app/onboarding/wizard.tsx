@@ -89,8 +89,8 @@ export function OnboardingWizard({ initialName }: { initialName: string }) {
   const steps = ["Sobre vos", "Tu pago", "Tus tarjetas"];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-10">
-      <div className="mb-8 space-y-3">
+    <main className="mx-auto flex min-h-safe w-full max-w-md flex-col px-6 pb-5 pt-2">
+      <div className="mb-6 space-y-3">
         <div className="flex items-center gap-2">
           {steps.map((s, i) => (
             <div
@@ -322,7 +322,7 @@ export function OnboardingWizard({ initialName }: { initialName: string }) {
         </div>
       )}
 
-      <div className="mt-8 space-y-3">
+      <div className="mt-6 space-y-2">
         <div className="flex gap-3">
           {step > 0 && (
             <Button variant="outline" className="flex-1" onClick={() => setStep(step - 1)} disabled={saving}>

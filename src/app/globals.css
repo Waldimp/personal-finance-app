@@ -242,3 +242,8 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
+
+/* Altura de pantalla descontando el safe-area superior (el body ya lo paddea) */
+.min-h-safe {
+  min-height: calc(100dvh - env(safe-area-inset-top));
+}

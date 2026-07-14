@@ -30,7 +30,7 @@ export default async function AppLayout({
   if (profile && !profile.onboarding_completed) redirect("/onboarding");
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div className="mx-auto flex min-h-safe w-full max-w-md flex-col">
       <main className="flex-1 px-4 pb-28 pt-4">{children}</main>
       <BottomTabs />
       <QuickAddSheet
