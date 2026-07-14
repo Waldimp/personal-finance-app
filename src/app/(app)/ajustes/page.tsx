@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "./theme-toggle";
+import { PushSettings } from "./push-settings";
 import {
   ChevronRight,
   CreditCard,
   LogOut,
   Repeat,
+  Smartphone,
   Tags,
   UserRound,
 } from "lucide-react";
@@ -73,6 +75,23 @@ export default async function AjustesPage() {
             title="Movimientos recurrentes"
             subtitle="Salario, suscripciones, gastos fijos"
           />
+          <Separator />
+          <SettingsLink
+            href="/ajustes/token"
+            icon={<Smartphone className="size-5" />}
+            title="Apple Pay automático"
+            subtitle="Token y Atajo de iOS para registrar pagos solos"
+          />
+          <Separator />
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="font-medium">Notificaciones</p>
+              <p className="text-sm text-muted-foreground">
+                Alertas de presupuesto en tu teléfono
+              </p>
+            </div>
+            <PushSettings />
+          </div>
           <Separator />
           <div className="flex items-center justify-between py-3">
             <div>

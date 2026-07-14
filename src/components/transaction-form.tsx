@@ -11,6 +11,7 @@ import {
   updateTransaction,
 } from "@/lib/actions/transactions";
 import { todayLocal } from "@/lib/dates";
+import { celebrate } from "@/components/celebration";
 import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,6 +150,13 @@ export function TransactionForm({
         toast.success("Movimiento actualizado ✅");
       } else {
         await createTransaction(payload);
+        if (type === "income") {
+          celebrate("income");
+        } else if (amount < 15) {
+          celebrate("ants"); // gasto hormiga 🐜
+        } else {
+          celebrate("expense");
+        }
         toast.success(
           type === "expense" ? "Gasto registrado ✅" : "Ingreso registrado ✅"
         );

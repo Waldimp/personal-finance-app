@@ -29,7 +29,7 @@ export default async function EstadisticasPage({
   const balance = summary.income - summary.expense;
 
   return (
-    <div className="space-y-5">
+    <div className="stagger space-y-5">
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"

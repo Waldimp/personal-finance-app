@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Category, PaymentMethod } from "@/lib/types";
 import { BottomTabs } from "@/components/nav/bottom-tabs";
+import { CelebrationHost } from "@/components/celebration";
 import { QuickAddSheet } from "@/components/transaction-form";
 
 export default async function AppLayout({
@@ -36,6 +37,7 @@ export default async function AppLayout({
         categories={(categories ?? []) as Category[]}
         methods={(methods ?? []) as PaymentMethod[]}
       />
+      <CelebrationHost />
     </div>
   );
 }

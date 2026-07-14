@@ -11,11 +11,15 @@ import { getMonthSummary, getMonthlySeries } from "@/lib/queries/summary";
 import { getMonthCommitments } from "@/lib/queries/commitments";
 import { getBudgetsWithSpent } from "@/lib/queries/budgets";
 import type { TransactionWithRefs } from "@/lib/types";
+import { buildInsightContext } from "@/lib/queries/insights-context";
+import { computeInsights } from "@/lib/insights/rules";
+import { InsightsPanel } from "@/components/insights-panel";
 import { CategoryDonut } from "@/components/charts/category-donut";
 import { MonthlyBars } from "@/components/charts/monthly-bars";
 import { CategoryIcon } from "@/components/category-icon";
 import { PendingPayments } from "@/components/pending-payments";
 import { BudgetBar } from "@/components/budget-bar";
+import { CountUp } from "@/components/count-up";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +53,7 @@ export default async function DashboardPage({
     commitments,
     budgets,
     { data: recent },
+    { count: inboxCount },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -67,6 +72,10 @@ export default async function DashboardPage({
       .order("tx_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .is("category_id", null),
   ]);
 
   // Ingresos esperados: lo registrado + recurrentes de ingreso pendientes.
@@ -81,6 +90,11 @@ export default async function DashboardPage({
     : expectedIncome;
 
   const available = incomeBase - summary.expense - committedExpense;
+
+  // Consejos y ánimos (solo para el mes actual).
+  const insights = isCurrent
+    ? computeInsights(await buildInsightContext(supabase, incomeBase))
+    : [];
   const daysLeft = daysLeftInMonth(month);
   const perDay = daysLeft > 0 && available > 0 ? available / daysLeft : 0;
   const firstName = profile?.display_name?.split(" ")[0];
@@ -88,7 +102,7 @@ export default async function DashboardPage({
   const alertBudgets = budgets.filter((b) => b.pct >= 90);
 
   return (
-    <div className="space-y-5">
+    <div className="stagger space-y-5">
       {/* Header del mes */}
       <div className="flex items-center justify-between">
         <Button
@@ -116,24 +130,23 @@ export default async function DashboardPage({
 
       {/* Hero: Disponible */}
       <Card
-        className={
+        className={`animate-fade-up ${
           available < 0
             ? "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/40"
             : ""
-        }
+        }`}
       >
         <CardContent className="pt-4 text-center">
           <p className="text-sm text-muted-foreground">
             {available < 0 ? "Excedido este mes" : "Disponible este mes"}
           </p>
-          <p
-            className={`mt-1 text-4xl font-bold tabular-nums ${
+          <CountUp
+            value={Math.abs(available)}
+            prefix={available < 0 ? "−" : ""}
+            className={`mt-1 block text-4xl font-bold tabular-nums ${
               available < 0 ? "text-red-600 dark:text-red-400" : ""
             }`}
-          >
-            {available < 0 ? "−" : ""}
-            {formatMoney(Math.abs(available))}
-          </p>
+          />
           {available < 0 ? (
             <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/80">
               Entre lo gastado y lo comprometido vas {formatMoney(Math.abs(available))}{" "}
@@ -179,6 +192,17 @@ export default async function DashboardPage({
         <QuickLink href="/tarjetas" icon={<CreditCard className="size-5" />} label="Tarjetas" />
       </div>
 
+      {/* Inbox pendiente */}
+      {(inboxCount ?? 0) > 0 && (
+        <Link
+          href="/inbox"
+          className="block rounded-xl border border-blue-300 bg-blue-50 p-3 text-sm text-blue-700 transition-transform active:scale-[0.99] dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-400"
+        >
+          📥 Tenés <strong>{inboxCount}</strong> movimiento
+          {inboxCount === 1 ? "" : "s"} sin categorizar — tocá para clasificar
+        </Link>
+      )}
+
       {/* Alertas de presupuesto */}
       {isCurrent && alertBudgets.length > 0 && (
         <div className="space-y-2">
@@ -202,6 +226,9 @@ export default async function DashboardPage({
 
       {/* Pagos pendientes del mes */}
       {isCurrent && <PendingPayments commitments={commitments} />}
+
+      {/* Consejos y ánimos */}
+      <InsightsPanel insights={insights} />
 
       {/* Top presupuestos */}
       {topBudgets.length > 0 && (

@@ -55,7 +55,7 @@ export function DebtsManager({ debts, plans, categories, methods, projection }: 
   const month = currentMonth();
 
   return (
-    <div className="space-y-6">
+    <div className="stagger space-y-6">
       <h1 className="text-2xl font-bold">Deudas y cuotas</h1>
 
       {/* Proyección de compromisos */}
