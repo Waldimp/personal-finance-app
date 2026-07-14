@@ -144,6 +144,7 @@ export function CategoriesManager({ categories }: { categories: Category[] }) {
                 <Label>Tipo</Label>
                 <Select
                   value={form.type}
+                  items={{ expense: "Gasto", income: "Ingreso" }}
                   onValueChange={(v) =>
                     setForm({ ...form, type: v as FormState["type"] })
                   }
@@ -163,6 +164,12 @@ export function CategoriesManager({ categories }: { categories: Category[] }) {
                   <Label>¿Qué tipo de gasto es?</Label>
                   <Select
                     value={form.needs_bucket}
+                    items={{
+                      need: "Necesidad",
+                      want: "Gusto",
+                      saving: "Ahorro",
+                      none: "Sin clasificar",
+                    }}
                     onValueChange={(v) =>
                       setForm({ ...form, needs_bucket: v as FormState["needs_bucket"] })
                     }

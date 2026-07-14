@@ -136,6 +136,7 @@ export function BudgetsManager({
               <Label>Categoría</Label>
               <Select
                 value={categoryId}
+                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
                 onValueChange={(v) => v && setCategoryId(v)}
                 disabled={!!editing}
               >

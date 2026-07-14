@@ -202,7 +202,11 @@ export function TokenManager({
               placeholder="texaco"
               className="flex-1"
             />
-            <Select value={ruleCategory} onValueChange={(v) => v && setRuleCategory(v)}>
+            <Select
+              value={ruleCategory}
+              items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
+              onValueChange={(v) => v && setRuleCategory(v)}
+            >
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>

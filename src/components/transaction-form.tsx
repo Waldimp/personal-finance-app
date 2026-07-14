@@ -15,6 +15,7 @@ import { celebrate } from "@/components/celebration";
 import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -282,19 +283,29 @@ export function TransactionForm({
       )}
 
       {/* Fecha y nota */}
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          type="date"
-          value={date}
-          max={todayLocal()}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <Input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Nota (opcional)"
-          maxLength={120}
-        />
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium">Fecha</p>
+          <Input
+            type="date"
+            value={date}
+            max={todayLocal()}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium">
+            Nota <span className="font-normal text-muted-foreground">(opcional)</span>
+          </p>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="¿En qué fue? Ej: cine con mi novia 🍿"
+            maxLength={120}
+            rows={2}
+            className="resize-none"
+          />
+        </div>
       </div>
 
       <div className="space-y-2">

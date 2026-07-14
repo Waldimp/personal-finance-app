@@ -150,6 +150,11 @@ export function CardsManager({ methods }: { methods: PaymentMethod[] }) {
                 <Label>Tipo</Label>
                 <Select
                   value={form.type}
+                  items={{
+                    credit: "Tarjeta de crédito",
+                    debit: "Tarjeta de débito",
+                    cash: "Efectivo",
+                  }}
                   onValueChange={(v) =>
                     setForm({ ...form, type: v as FormState["type"] })
                   }

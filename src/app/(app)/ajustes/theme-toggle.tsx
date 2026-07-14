@@ -19,6 +19,7 @@ export function ThemeToggle() {
   return (
     <Select
       value={theme}
+      items={{ light: "Claro", dark: "Oscuro", system: "Sistema" }}
       onValueChange={(v) => {
         if (v) setTheme(v);
       }}

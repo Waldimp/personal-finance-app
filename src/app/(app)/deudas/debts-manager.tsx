@@ -363,6 +363,7 @@ function DebtsSection({
               <Label>Categoría del gasto</Label>
               <Select
                 value={form.category_id}
+                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
                 onValueChange={(v) => v && setForm({ ...form, category_id: v })}
               >
                 <SelectTrigger className="w-full">
@@ -381,6 +382,7 @@ function DebtsSection({
               <Label>Método de pago habitual</Label>
               <Select
                 value={form.payment_method_id}
+                items={Object.fromEntries(methods.map((m) => [m.id, m.name]))}
                 onValueChange={(v) =>
                   v && setForm({ ...form, payment_method_id: v })
                 }
@@ -742,6 +744,7 @@ function InstallmentsSection({
               <Label>Tarjeta</Label>
               <Select
                 value={form.payment_method_id}
+                items={Object.fromEntries(methods.map((m) => [m.id, m.name]))}
                 onValueChange={(v) => v && setForm({ ...form, payment_method_id: v })}
               >
                 <SelectTrigger className="w-full">
@@ -760,6 +763,7 @@ function InstallmentsSection({
               <Label>Categoría</Label>
               <Select
                 value={form.category_id}
+                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
                 onValueChange={(v) => v && setForm({ ...form, category_id: v })}
               >
                 <SelectTrigger className="w-full">

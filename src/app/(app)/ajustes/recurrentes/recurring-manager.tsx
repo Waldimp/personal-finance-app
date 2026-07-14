@@ -242,6 +242,7 @@ export function RecurringManager({
               <Label>Categoría</Label>
               <Select
                 value={form.category_id}
+                items={Object.fromEntries(categories.map((c) => [c.id, c.name]))}
                 onValueChange={(v) => v && setForm({ ...form, category_id: v })}
               >
                 <SelectTrigger className="w-full">
@@ -261,6 +262,7 @@ export function RecurringManager({
                 <Label>Método de pago</Label>
                 <Select
                   value={form.payment_method_id}
+                  items={Object.fromEntries(methods.map((m) => [m.id, m.name]))}
                   onValueChange={(v) =>
                     v && setForm({ ...form, payment_method_id: v })
                   }

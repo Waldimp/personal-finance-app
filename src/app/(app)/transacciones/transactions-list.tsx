@@ -115,6 +115,12 @@ export function TransactionsList({
       <div className="grid grid-cols-2 gap-2">
         <Select
           value={categoryFilter || "all"}
+          items={{
+            all: "Todas las categorías",
+            ...Object.fromEntries(
+              categories.filter((c) => !c.is_archived).map((c) => [c.id, c.name])
+            ),
+          }}
           onValueChange={(v) => navigate({ categoria: v ?? "all" })}
         >
           <SelectTrigger className="w-full">
@@ -133,6 +139,12 @@ export function TransactionsList({
         </Select>
         <Select
           value={methodFilter || "all"}
+          items={{
+            all: "Todos los métodos",
+            ...Object.fromEntries(
+              methods.filter((m) => !m.is_archived).map((m) => [m.id, m.name])
+            ),
+          }}
           onValueChange={(v) => navigate({ tarjeta: v ?? "all" })}
         >
           <SelectTrigger className="w-full">
