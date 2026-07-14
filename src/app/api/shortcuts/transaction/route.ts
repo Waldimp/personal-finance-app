@@ -26,14 +26,39 @@ function parseAmount(raw: unknown): number | null {
  * Body: { "amount": 12.50, "merchant": "TEXACO", "card": "Visa BAC" }
  * Auth: Authorization: Bearer mf_xxx (token de Ajustes → Apple Pay automático)
  */
+type LogEntry = {
+  user_id?: string | null;
+  status: "ok" | "duplicate" | "inbox" | "auth_error" | "bad_request" | "error";
+  merchant?: string;
+  amount?: number | null;
+  card?: string;
+  matched_category?: string | null;
+  matched_method?: string | null;
+  error?: string | null;
+};
+
+/** Registro de auditoría (fire-and-forget: nunca rompe la respuesta). */
+async function logCall(
+  admin: ReturnType<typeof createAdminClient>,
+  entry: LogEntry
+) {
+  try {
+    await admin.from("shortcut_logs").insert(entry);
+  } catch {
+    // la tabla puede no existir aún; no bloquear el registro del gasto
+  }
+  console.log("[shortcuts/transaction]", JSON.stringify(entry));
+}
+
 export async function POST(request: Request) {
+  const admin = createAdminClient();
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!token) {
+    await logCall(admin, { status: "auth_error", error: "missing token" });
     return NextResponse.json({ error: "missing token" }, { status: 401 });
   }
 
-  const admin = createAdminClient();
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
   const { data: apiToken } = await admin
@@ -42,6 +67,7 @@ export async function POST(request: Request) {
     .eq("token_hash", tokenHash)
     .single();
   if (!apiToken) {
+    await logCall(admin, { status: "auth_error", error: "invalid token" });
     return NextResponse.json({ error: "invalid token" }, { status: 401 });
   }
 
@@ -49,11 +75,23 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
+    await logCall(admin, {
+      user_id: apiToken.user_id,
+      status: "bad_request",
+      error: "invalid json",
+    });
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
   const amount = parseAmount(body.amount);
   if (!amount) {
+    await logCall(admin, {
+      user_id: apiToken.user_id,
+      status: "bad_request",
+      merchant: typeof body.merchant === "string" ? body.merchant : "",
+      card: typeof body.card === "string" ? body.card : "",
+      error: `invalid amount: ${JSON.stringify(body.amount ?? null)}`,
+    });
     return NextResponse.json({ error: "invalid amount" }, { status: 400 });
   }
   const merchant = typeof body.merchant === "string" ? body.merchant.trim() : "";
@@ -77,6 +115,13 @@ export async function POST(request: Request) {
     .gte("created_at", twoMinAgo)
     .limit(1);
   if (dup && dup.length > 0) {
+    await logCall(admin, {
+      user_id: userId,
+      status: "duplicate",
+      merchant,
+      amount,
+      card: cardName,
+    });
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
@@ -132,9 +177,30 @@ export async function POST(request: Request) {
     payment_method_id: paymentMethodId,
     source: "shortcut",
   });
+  const matchedMethodName =
+    methods?.find((m) => m.id === paymentMethodId)?.name ?? null;
+
   if (error) {
+    await logCall(admin, {
+      user_id: userId,
+      status: "error",
+      merchant,
+      amount,
+      card: cardName,
+      error: error.message,
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await logCall(admin, {
+    user_id: userId,
+    status: categoryId ? "ok" : "inbox",
+    merchant,
+    amount,
+    card: cardName,
+    matched_category: categoryName,
+    matched_method: matchedMethodName,
+  });
 
   return NextResponse.json(
     { ok: true, category: categoryName, inbox: !categoryId },

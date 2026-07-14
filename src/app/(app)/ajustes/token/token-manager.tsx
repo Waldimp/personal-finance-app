@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Category } from "@/lib/types";
-import type { ApiTokenRow, MerchantRuleRow } from "./page";
+import type { ApiTokenRow, MerchantRuleRow, ShortcutLogRow } from "./page";
+import { formatMoney } from "@/lib/money";
 import {
   createApiToken,
   createMerchantRule,
@@ -23,14 +24,28 @@ import {
 } from "@/components/ui/select";
 import { Copy, KeyRound, Plus, Smartphone, Trash2 } from "lucide-react";
 
+const LOG_STYLES: Record<
+  ShortcutLogRow["status"],
+  { emoji: string; label: string }
+> = {
+  ok: { emoji: "✅", label: "Registrado" },
+  inbox: { emoji: "📥", label: "Al inbox" },
+  duplicate: { emoji: "🔁", label: "Duplicado ignorado" },
+  auth_error: { emoji: "🔒", label: "Token inválido" },
+  bad_request: { emoji: "⚠️", label: "Datos inválidos" },
+  error: { emoji: "❌", label: "Error" },
+};
+
 export function TokenManager({
   tokens,
   rules,
   categories,
+  logs,
 }: {
   tokens: ApiTokenRow[];
   rules: MerchantRuleRow[];
   categories: Category[];
+  logs: ShortcutLogRow[];
 }) {
   const [freshToken, setFreshToken] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -223,6 +238,12 @@ export function TokenManager({
             </Button>
           </div>
           <div className="space-y-1.5">
+            {rules.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Sin reglas todavía — también se crean solas al clasificar desde
+                el inbox.
+              </p>
+            )}
             {rules.map((r) => (
               <div
                 key={r.id}
@@ -248,6 +269,57 @@ export function TokenManager({
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Actividad del Atajo */}
+      <Card>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base">📡 Actividad del Atajo</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {logs.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Aún no hay llamadas. Cuando pagués con Apple Pay (o pruebes el
+              endpoint), cada llamada aparece aquí con su resultado.
+            </p>
+          ) : (
+            logs.map((log) => {
+              const style = LOG_STYLES[log.status];
+              return (
+                <div key={log.id} className="rounded-lg border p-2.5 text-sm">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="min-w-0 truncate font-medium">
+                      {style.emoji} {log.merchant || style.label}
+                    </p>
+                    {log.amount != null && (
+                      <p className="shrink-0 tabular-nums">
+                        {formatMoney(Number(log.amount))}
+                      </p>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {style.label}
+                    {log.matched_category && ` → ${log.matched_category}`}
+                    {log.matched_method && ` · ${log.matched_method}`}
+                    {log.error && ` · ${log.error}`}
+                    {" · "}
+                    {new Date(log.created_at).toLocaleString("es-SV", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: "America/El_Salvador",
+                    })}
+                  </p>
+                </div>
+              );
+            })
+          )}
+          <p className="text-[11px] text-muted-foreground">
+            Para logs técnicos en vivo: Vercel → proyecto → Logs (se retienen
+            ~1 hora en el plan gratis; este historial queda guardado).
+          </p>
         </CardContent>
       </Card>
     </div>

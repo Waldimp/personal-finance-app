@@ -17,9 +17,21 @@ export type MerchantRuleRow = {
   categories: { name: string; color: string } | null;
 };
 
+export type ShortcutLogRow = {
+  id: string;
+  status: "ok" | "duplicate" | "inbox" | "auth_error" | "bad_request" | "error";
+  merchant: string;
+  amount: number | null;
+  card: string;
+  matched_category: string | null;
+  matched_method: string | null;
+  error: string | null;
+  created_at: string;
+};
+
 export default async function TokenPage() {
   const supabase = await createClient();
-  const [{ data: tokens }, { data: rules }, { data: categories }] =
+  const [{ data: tokens }, { data: rules }, { data: categories }, { data: logs }] =
     await Promise.all([
       supabase
         .from("api_tokens")
@@ -35,6 +47,11 @@ export default async function TokenPage() {
         .eq("type", "expense")
         .eq("is_archived", false)
         .order("name"),
+      supabase
+        .from("shortcut_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
 
   return (
@@ -42,6 +59,7 @@ export default async function TokenPage() {
       tokens={(tokens ?? []) as ApiTokenRow[]}
       rules={(rules ?? []) as unknown as MerchantRuleRow[]}
       categories={(categories ?? []) as Category[]}
+      logs={(logs ?? []) as ShortcutLogRow[]}
     />
   );
 }
