@@ -10,6 +10,6 @@ export const config = {
     /*
      * Todo excepto estáticos e imágenes.
      */
-    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
