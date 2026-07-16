@@ -90,7 +90,7 @@ export function ChatAssistant() {
 
   return (
     <div
-      className="fixed inset-x-0 z-30 mx-auto flex w-full max-w-md flex-col bg-background px-4 pt-2"
+      className="fixed inset-x-0 z-30 mx-auto flex w-full max-w-md touch-none flex-col bg-background px-4 pt-2"
       style={{
         top: "env(safe-area-inset-top)",
         bottom: 0,
@@ -119,7 +119,7 @@ export function ChatAssistant() {
       </div>
 
       {/* Mensajes */}
-      <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain pb-3">
+      <div className="flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain pb-3">
         {messages.length === 0 && (
           <div className="space-y-4 pt-6">
             <p className="text-center text-sm text-muted-foreground">
