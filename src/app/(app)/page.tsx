@@ -5,6 +5,8 @@ import {
   currentMonth,
   daysLeftInMonth,
   formatMonth,
+  monthRange,
+  todayLocal,
 } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { getMonthSummary, getMonthlySeries } from "@/lib/queries/summary";
@@ -20,6 +22,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { PendingPayments } from "@/components/pending-payments";
 import { BudgetBar } from "@/components/budget-bar";
 import { CountUp } from "@/components/count-up";
+import { WrappedBanner } from "@/components/wrapped-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +58,7 @@ export default async function DashboardPage({
     budgets,
     { data: recent },
     { count: inboxCount },
+    { count: prevMonthCount },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -77,7 +81,19 @@ export default async function DashboardPage({
       .from("transactions")
       .select("id", { count: "exact", head: true })
       .is("category_id", null),
+    supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .gte("tx_date", monthRange(addMonths(currentMonth(), -1)).start)
+      .lte("tx_date", monthRange(addMonths(currentMonth(), -1)).end),
   ]);
+
+  // Wrapped: banner los primeros 7 días del mes si el mes pasado tuvo movimientos.
+  const showWrapped =
+    isCurrent &&
+    Number(todayLocal().slice(8, 10)) <= 7 &&
+    (prevMonthCount ?? 0) > 0;
+  const wrappedMonth = addMonths(currentMonth(), -1);
 
   const committedExpense = isCurrent ? commitments.committedExpense : 0;
   const pendingIncome = isCurrent ? commitments.pendingIncome : 0;
@@ -127,6 +143,9 @@ export default async function DashboardPage({
           <ChevronRight className="size-5" />
         </Button>
       </div>
+
+      {/* Wrapped del mes pasado */}
+      {showWrapped && <WrappedBanner month={wrappedMonth} />}
 
       {/* Hero: Disponible */}
       <Card
