@@ -21,6 +21,7 @@ export function ChatAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [kbOffset, setKbOffset] = useState(0);
+  const [focused, setFocused] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,7 +32,6 @@ export function ChatAssistant() {
   // En PWA instalada de iOS, visualViewport a veces NO reporta el teclado
   // (bug de WebKit), así que medimos con varias señales y, como último
   // recurso, estimamos proporcional a la pantalla mientras haya foco.
-  const [focused, setFocused] = useState(false);
   const baseHeight = useRef(0);
 
   useEffect(() => {
