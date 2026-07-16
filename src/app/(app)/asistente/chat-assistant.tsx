@@ -28,54 +28,32 @@ export function ChatAssistant() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, kbOffset, focused]);
 
-  // Altura del teclado para elevar SOLO la barra de texto.
-  // En PWA instalada de iOS, visualViewport a veces NO reporta el teclado
-  // (bug de WebKit), así que medimos con varias señales y, como último
-  // recurso, estimamos proporcional a la pantalla mientras haya foco.
-  const baseHeight = useRef(0);
-
+  // Compensación de teclado:
+  // - PWA instalada (iOS standalone): la VENTANA se redimensiona con el
+  //   teclado → el contenedor fixed sube solo; offset medido ≈ 0. ✔
+  // - Safari navegador: la ventana NO cambia, el visualViewport sí →
+  //   offset = alto del teclado y lo compensamos con padding. ✔
   useEffect(() => {
     const vv = window.visualViewport;
     const measure = () => {
       const visible = vv ? vv.height + vv.offsetTop : window.innerHeight;
-      baseHeight.current = Math.max(
-        baseHeight.current,
-        visible,
-        window.innerHeight
-      );
-      setKbOffset(Math.max(0, baseHeight.current - visible));
+      setKbOffset(Math.max(0, window.innerHeight - visible));
       window.scrollTo(0, 0); // evita que iOS desplace el documento
     };
     measure();
-    // Re-medición periódica ligera: cubre la animación del teclado (~250ms)
-    // aunque ningún evento dispare.
-    const timer = setInterval(measure, 500);
+    const timer = setInterval(measure, 400); // cubre la animación del teclado
     vv?.addEventListener("resize", measure);
     vv?.addEventListener("scroll", measure);
     window.addEventListener("resize", measure);
-    window.addEventListener("focusin", measure);
-    window.addEventListener("focusout", measure);
     return () => {
       clearInterval(timer);
       vv?.removeEventListener("resize", measure);
       vv?.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
-      window.removeEventListener("focusin", measure);
-      window.removeEventListener("focusout", measure);
     };
   }, []);
 
-  // Si ninguna API reportó el teclado pero el campo tiene foco, estimamos
-  // (~44% de la pantalla, el alto típico del teclado iOS con sugerencias).
-  const effectiveOffset =
-    kbOffset > 40
-      ? kbOffset
-      : focused
-        ? Math.min(
-            440,
-            Math.max(280, Math.round((baseHeight.current || 800) * 0.44))
-          )
-        : 0;
+  const effectiveOffset = kbOffset > 40 ? kbOffset : 0;
 
   async function send(text: string) {
     const content = text.trim();
@@ -118,10 +96,14 @@ export function ChatAssistant() {
         bottom: 0,
         // Teclado abierto: la barra queda justo encima del teclado.
         // Teclado cerrado: queda encima del tab bar (que no se mueve).
+        // Teclado visible (medido o ventana redimensionada con foco):
+        // pegado arriba del teclado. Sin teclado: libra el tab bar y el "+".
         paddingBottom:
           effectiveOffset > 0
             ? effectiveOffset + 8
-            : "calc(6.5rem + env(safe-area-inset-bottom))",
+            : focused
+              ? 12
+              : "calc(8.5rem + env(safe-area-inset-bottom))",
       }}
     >
       <div className="flex items-center gap-2 pb-3">
@@ -137,7 +119,7 @@ export function ChatAssistant() {
       </div>
 
       {/* Mensajes */}
-      <div className="flex-1 space-y-3 overflow-y-auto pb-3">
+      <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain pb-3">
         {messages.length === 0 && (
           <div className="space-y-4 pt-6">
             <p className="text-center text-sm text-muted-foreground">
