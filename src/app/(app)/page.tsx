@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Sparkles,
   Target,
 } from "lucide-react";
 
@@ -189,10 +190,11 @@ export default async function DashboardPage({
       </Card>
 
       {/* Accesos rápidos */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <QuickLink href="/presupuestos" icon={<Target className="size-5" />} label="Presupuestos" />
-        <QuickLink href="/deudas" icon={<Car className="size-5" />} label="Deudas y cuotas" />
+        <QuickLink href="/deudas" icon={<Car className="size-5" />} label="Deudas" />
         <QuickLink href="/tarjetas" icon={<CreditCard className="size-5" />} label="Tarjetas" />
+        <QuickLink href="/asistente" icon={<Sparkles className="size-5" />} label="Fina IA" />
       </div>
 
       {/* Inbox pendiente */}
