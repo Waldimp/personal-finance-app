@@ -20,11 +20,30 @@ export function ChatAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [kbOffset, setKbOffset] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, kbOffset]);
+
+  // Altura del teclado en vivo (visualViewport) para elevar SOLO la barra
+  // de texto; el resto del layout queda fijo.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setKbOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+      // Evita que iOS desplace el documento al enfocar.
+      window.scrollTo(0, 0);
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   async function send(text: string) {
     const content = text.trim();
@@ -60,7 +79,19 @@ export function ChatAssistant() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-env(safe-area-inset-top)-7rem)] flex-col">
+    <div
+      className="fixed inset-x-0 z-30 mx-auto flex w-full max-w-md flex-col bg-background px-4 pt-2"
+      style={{
+        top: "env(safe-area-inset-top)",
+        bottom: 0,
+        // Teclado abierto: la barra queda justo encima del teclado.
+        // Teclado cerrado: queda encima del tab bar (que no se mueve).
+        paddingBottom:
+          kbOffset > 0
+            ? kbOffset + 8
+            : "calc(6.5rem + env(safe-area-inset-bottom))",
+      }}
+    >
       <div className="flex items-center gap-2 pb-3">
         <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Sparkles className="size-5" />
